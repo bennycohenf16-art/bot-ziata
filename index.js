@@ -74,15 +74,19 @@ async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
   const { version } = await fetchLatestBaileysVersion();
   const sock = makeWASocket({
-    version, auth: state, printQRInTerminal: true,
+    version, auth: state, printQRInTerminal: false,
     logger: pino({ level: 'silent' }),
     browser: ['Bot', 'Chrome', '3.0']
   });
 
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
-    if (qr) qrDataURL = await QRCode.toDataURL(qr);
-    if (connection === 'open') { qrDataURL = null; botConnected = true; console.log('✅ Conectado'); }
+    if (qr) {
+      qrDataURL = await QRCode.toDataURL(qr);
+      try { require('qrcode-terminal').generate(qr, { small: true }); } catch(_) {}
+      console.log('Escanea el QR con WhatsApp para conectar el bot.');
+    }
+    if (connection === 'open') { qrDataURL = null; botConnected = true; console.log('Conectado a WhatsApp.'); }
     if (connection === 'close') {
       botConnected = false;
       const code = lastDisconnect?.error?.output?.statusCode;
